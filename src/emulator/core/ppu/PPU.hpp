@@ -171,6 +171,7 @@ public:
     u8 read(u16 address);
     
     void step();
+    void cycle_empty() { m_clock.add_t(1); }
 
     friend class Fetcher; //Should probably change this to memory accesses
 };

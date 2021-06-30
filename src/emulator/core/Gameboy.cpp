@@ -10,7 +10,7 @@ Gameboy::Gameboy(const std::string &rom_path, const std::string &boot_path, Vide
 : m_memory(m_cpu, m_ppu, m_apu, m_timer, input_device), m_cpu(m_memory, m_scheduler.cpu_clock, boot_path.empty()), 
 m_ppu(m_cpu, m_memory, m_scheduler.ppu_clock, video_device, stub_ly), m_apu(m_timer, audio_device), m_timer(m_cpu) {
     m_scheduler.set_cpu_step([&]() {
-        if(!m_cpu.halted()) {
+        if(!m_cpu.halted() && !m_cpu.stopped()) {
             m_cpu.step();
         } else {
             //Execute a nop while halted
@@ -18,7 +18,13 @@ m_ppu(m_cpu, m_memory, m_scheduler.ppu_clock, video_device, stub_ly), m_apu(m_ti
         }
         m_cpu.service_interrupts(); 
     });
-    m_scheduler.set_ppu_step([&]() { m_ppu.step(); m_apu.step(); m_timer.step(); });
+    m_scheduler.set_ppu_step([&]() { 
+        if(!m_cpu.stopped()) {
+            m_ppu.step(); m_apu.step(); m_timer.step();
+        } else {
+            m_ppu.cycle_empty(); //Keep the clock ticking
+        }
+    });
 
     load_rom(rom_path, save_load_ram);
     if(!boot_path.empty()) load_boot(boot_path);

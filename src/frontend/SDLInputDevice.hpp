@@ -64,23 +64,25 @@ public:
 
     // A = A, B = S, Select = Z, Start = X, Up = Up Arrow, Right = Right Arrow, Left = Left Arrow, Down = Down Arrow
     void handle_event(SDL_Event &event) {
+        bool fire_int = false;
+
         if(event.type == SDL_KEYDOWN && !m_con_connected) {
             switch(event.key.keysym.scancode) {
-                case SDL_SCANCODE_A : m_action[3] = true;
+                case SDL_SCANCODE_A : m_action[3] = true; fire_int = true;
                 break;
-                case SDL_SCANCODE_S : m_action[2] = true;
+                case SDL_SCANCODE_S : m_action[2] = true; fire_int = true;
                 break;
-                case SDL_SCANCODE_Z : m_action[1] = true;
+                case SDL_SCANCODE_Z : m_action[1] = true; fire_int = true;
                 break;
-                case SDL_SCANCODE_X : m_action[0] = true;
+                case SDL_SCANCODE_X : m_action[0] = true; fire_int = true;
                 break;
-                case SDL_SCANCODE_UP : m_dir[1] = true;
+                case SDL_SCANCODE_UP : m_dir[1] = true; fire_int = true;
                 break;
-                case SDL_SCANCODE_RIGHT : m_dir[3] = true;
+                case SDL_SCANCODE_RIGHT : m_dir[3] = true; fire_int = true;
                 break;
-                case SDL_SCANCODE_LEFT : m_dir[2] = true;
+                case SDL_SCANCODE_LEFT : m_dir[2] = true; fire_int = true;
                 break;
-                case SDL_SCANCODE_DOWN : m_dir[0] = true;
+                case SDL_SCANCODE_DOWN : m_dir[0] = true; fire_int = true;
                 default: break;
             }
         } else if(event.type == SDL_KEYUP && !m_con_connected) {
@@ -108,21 +110,21 @@ public:
         //Controller events
         if(event.type == SDL_CONTROLLERBUTTONDOWN) {
             switch(event.cbutton.button) {
-                case SDL_CONTROLLER_BUTTON_A : m_con_action[3] = true;
+                case SDL_CONTROLLER_BUTTON_A : m_con_action[3] = true; fire_int = true;
                 break;
-                case SDL_CONTROLLER_BUTTON_B : m_con_action[2] = true;
+                case SDL_CONTROLLER_BUTTON_B : m_con_action[2] = true; fire_int = true;
                 break;
-                case SDL_CONTROLLER_BUTTON_BACK : m_con_action[1] = true;
+                case SDL_CONTROLLER_BUTTON_BACK : m_con_action[1] = true; fire_int = true;
                 break;
-                case SDL_CONTROLLER_BUTTON_START : m_con_action[0] = true;
+                case SDL_CONTROLLER_BUTTON_START : m_con_action[0] = true; fire_int = true;
                 break;
-                case SDL_CONTROLLER_BUTTON_DPAD_UP : m_con_dir[1] = true;
+                case SDL_CONTROLLER_BUTTON_DPAD_UP : m_con_dir[1] = true; fire_int = true;
                 break;
-                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT : m_con_dir[3] = true;
+                case SDL_CONTROLLER_BUTTON_DPAD_RIGHT : m_con_dir[3] = true; fire_int = true;
                 break;
-                case SDL_CONTROLLER_BUTTON_DPAD_LEFT : m_con_dir[2] = true;
+                case SDL_CONTROLLER_BUTTON_DPAD_LEFT : m_con_dir[2] = true; fire_int = true;
                 break;
-                case SDL_CONTROLLER_BUTTON_DPAD_DOWN : m_con_dir[0] = true;
+                case SDL_CONTROLLER_BUTTON_DPAD_DOWN : m_con_dir[0] = true; fire_int = true;
                 default: break;
             }
         } else if(event.type == SDL_CONTROLLERBUTTONUP) {
@@ -147,14 +149,28 @@ public:
         }
 
         if(event.type == SDL_CONTROLLERAXISMOTION) {
+            bool old_left, old_right;
+
             switch(event.caxis.axis) {
                 case SDL_CONTROLLER_AXIS_LEFTX : 
+                    old_left = m_stick_dir[2]; 
+                    old_right = m_stick_dir[3];
                     m_stick_dir[3] = event.caxis.value > 16383;
                     m_stick_dir[2] = event.caxis.value < -16383;
+
+                    if(old_left != m_stick_dir[2] || old_right != m_stick_dir[3]) {
+                        fire_int = true;
+                    }
                 break;
                 case SDL_CONTROLLER_AXIS_LEFTY :
+                    old_left = m_stick_dir[2]; 
+                    old_right = m_stick_dir[3];
                     m_stick_dir[0] = event.caxis.value > 16383;
                     m_stick_dir[1] = event.caxis.value < -16383;
+
+                    if(old_left != m_stick_dir[2] || old_right != m_stick_dir[3]) {
+                        fire_int = true;
+                    }
                 break;
             }
         }
@@ -176,6 +192,10 @@ public:
             memset(m_con_action, false, 4);
             memset(m_con_dir, false, 4);
             memset(m_stick_dir, false, 4);
+        }
+
+        if(fire_int) {
+            m_int_callback();
         }
     }
 };

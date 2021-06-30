@@ -11,16 +11,13 @@
 #include <SDL.h>
 
 //TODO before going public :
-// - Refactor Memory
 // - Add MBC5
-// - Implement STOP
-// - Add bios loading
 
 
 static constexpr struct {
     int MAJOR = 0;
     int MINOR = 3;
-    int PATCH = 0;
+    int PATCH = 2;
 } VERSION;
 
 static constexpr float GB_SCREEN_RATIO = (float)GB_SCREEN_WIDTH / (float)GB_SCREEN_HEIGHT;

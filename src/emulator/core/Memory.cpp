@@ -13,6 +13,11 @@ namespace sb {
 
 Memory::Memory(CPU &cpu, PPU &ppu, APU &apu, Timer &timer, InputDevice &input_device) : m_cpu(cpu), m_ppu(ppu), m_apu(apu), m_timer(timer), m_input_device(input_device) {
     reset();
+
+    m_input_device.register_callback([&] {
+        m_input_device.get_input(m_io_regs[0]);
+        m_cpu.request_interrupt(JOYPAD_INT);
+    });
 }
 
 Memory::~Memory() { }
@@ -129,7 +134,12 @@ void Memory::write(u16 address, u8 value) {
         } else {
             if(in_range<u8>(bottom_byte, 0x00, 0x7F)) {
                 //IO Registers
-                if(in_range<u8>(bottom_byte, 0x04, 0x07)) {
+                if(address == 0xFF00) {
+                    //Joypad
+                    m_io_regs[0] &= ~0b00110000;
+                    m_io_regs[0] |= value & 0b00110000;
+                    m_input_device.get_input(m_io_regs[0]);
+                } else if(in_range<u8>(bottom_byte, 0x04, 0x07)) {
                     //Timers
                     m_timer.write(address, value);
                 } else if(in_range<u8>(bottom_byte, 0x10, 0x3F)) {
@@ -209,14 +219,6 @@ u8 Memory::read(u16 address) {
                 //IO Registers
                 if(bottom_byte == 0) {
                     //Controller
-                    u8 old = m_io_regs[0];
-                    m_input_device.get_input(m_io_regs[0]);
-
-                    //Check if a button was pressed, buttons go low when pressed so the number should be less
-                    if(old > m_io_regs[0]) {
-                        m_cpu.request_interrupt(JOYPAD_INT);
-                    }
-
                     return m_io_regs[0];
                 } else if(in_range<u8>(bottom_byte, 0x04, 0x07)) {
                     //Timers
