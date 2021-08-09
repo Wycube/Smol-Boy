@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
                 if(event.type == SDL_DROPFILE) {
                     gb.save_ram();
                     gb.load_rom(event.drop.file, !args.is_set("no-save"));
-                    SDL_SetWindowTitle(window, fmt::format("Smol Boy - {}", gb.get_title()).c_str());
+                    SDL_SetWindowTitle(window, fmt::format("Smol Boy - {}", gb.get_title().substr(0, 12)).c_str());
                 }
 
                 //Fast Forward Hotkey

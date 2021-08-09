@@ -11,7 +11,7 @@
 namespace sb {
 
 enum MBC_Type {
-    NO_MBC, MBC_1, MBC_3
+    NO_MBC, MBC_1, MBC_3, MBC_5
 };
 
 struct MBCInfo {
@@ -33,6 +33,10 @@ constexpr MBCInfo info_from_code(u8 code) {
         case 0x11 : return {MBC_3, false, false};
         case 0x12 : return {MBC_3, true, false};
         case 0x13 : return {MBC_3, true, true};
+        case 0x19 : return {MBC_5, false, false};
+        case 0x1A : return {MBC_5, true, false};
+        case 0x1B : return {MBC_5, true, true};
+        //MBC5's with rumble
 
         default : LOG_FATAL("Mapper of type 0x{:02X} is not yet supported!", code);
     }
@@ -144,6 +148,24 @@ public:
     u8 read(u16 address) override;
 
     bool has_timer() { return m_has_timer; }
+};
+
+
+class MBC5 : public MBC {
+private:
+
+    u16 m_selected_rom;
+    u8 m_selected_ram;
+    bool m_ram_enable;
+
+public:
+
+    MBC5(bool has_ram, bool has_battery) : MBC(has_ram, has_battery), m_ram_enable(true), m_selected_rom(1), m_selected_ram(0) { }
+
+    void init(u8 rom_banks, u8 ram_banks) override;
+    void load_rom(u8 *rom_data) override;
+    void write(u16 address, u8 value) override;
+    u8 read(u16 address) override;
 };
 
 } //namespace sb

@@ -23,6 +23,8 @@ void Mapper::create(u8 code, u8 rom_banks, u8 ram_banks, u8 *rom_data) {
         break;
         case MBC_3 : m_mbc = new MBC3(info.has_ram, info.has_battery, info.has_timer); LOG_INFO("[MAP] : MBC3");
         break;
+        case MBC_5 : m_mbc = new MBC5(info.has_ram, info.has_battery); LOG_INFO("[MAP] : MBC5");
+        break;
     }
 
     m_mbc->init(rom_banks, ram_banks);
@@ -221,6 +223,64 @@ u8 MBC3::read(u16 address) {
         if(m_ram_enable) return m_ram[(address - 0xA000) + m_selected_ram * 8 * KiB];
     } else if(in_range<u16>(address, 0xA000, 0xBFFF)){
         //LOG_INFO("Attempting to read from RTC");
+    }
+
+    return 0xff;
+}
+
+
+//--------------- MBC5 ---------------//
+
+void MBC5::init(u8 rom_banks, u8 ram_banks) {
+    //The second is technically 2Kib of RAM but whatever
+    static const u8 ram_bank_sizes[6] = {0, 1, 1, 4, 16, 8};
+
+    m_rom_banks = 2 << rom_banks;
+    m_ram_banks = ram_bank_sizes[ram_banks];
+
+    LOG_INFO("[MBC3] : Number of ROM banks: {}", m_rom_banks);
+    LOG_INFO("[MBC3] : Number of RAM banks: {}", m_ram_banks);
+
+    m_rom.resize(m_rom_banks * 16 * KiB);
+    m_ram.resize(m_ram_banks * 8 * KiB);
+}
+
+void MBC5::load_rom(u8 *rom_data) {
+    memcpy(m_rom.data(), rom_data, m_rom_banks * 16 * KiB);
+}
+
+void MBC5::write(u16 address, u8 value) {
+    if(in_range<u16>(address, 0x0000, 0x1FFF)) {
+        //RAM Enable
+        m_ram_enable = (value & 0xf) == 0xa;
+    } else if(in_range<u16>(address, 0x2000, 0x2FFF)) {
+        //ROM Bank Number, least-significant 8 bits
+        m_selected_rom &= ~0xff;
+        m_selected_rom |= value;
+    } else if(in_range<u16>(address, 0x3000, 0x3FFF)) {
+        //ROM Bank Number, 9th bit
+        m_selected_rom &= 0xff;
+        m_selected_rom |= (value & 1) << 8;
+    } else if(in_range<u16>(address, 0x4000, 0x5FFF)) {
+        //RAM Bank Number, 0x00 - 0x0F
+        //Also on cartridges with rumble, bit 3 controls the rumble motor.
+        m_selected_ram = value & 0xf;
+    } else if(in_range<u16>(address, 0xA000, 0xBFFF) && m_ram_banks != 0 && m_ram_enable) {
+        //RAM bank whatever
+        m_ram[(address - 0xA000) + m_selected_ram * 8 * KiB] = value;
+    }
+}
+
+u8 MBC5::read(u16 address) {
+    if(in_range<u16>(address, 0x0000, 0x3FFF)) {
+        //ROM bank 0
+        return m_rom[address];
+    } else if(in_range<u16>(address, 0x4000, 0x7FFF)) {
+        //ROM bank whatever
+        return m_rom[(address - 0x4000) + m_selected_rom * 16 * KiB];
+    } else if(in_range<u16>(address, 0xA000, 0xBFFF) && m_ram_banks != 0 && m_ram_enable) {
+        //RAM bank whatever
+        return m_ram[(address - 0xA000) + m_selected_ram * 8 * KiB];
     }
 
     return 0xff;
