@@ -34,6 +34,7 @@ public:
     ~Gameboy();
 
     void reset();
+    bool rom_loaded();
     bool load_rom(const std::string &rom_path, bool save_load_ram = true);
     bool load_boot(const std::string &path);
     void load_ram();

@@ -1,4 +1,5 @@
 #include "Scheduler.hpp"
+#include "common/Log.hpp"
 
 
 namespace sb {

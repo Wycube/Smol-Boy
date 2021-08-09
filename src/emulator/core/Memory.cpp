@@ -81,6 +81,7 @@ bool Memory::load_boot(const std::string &path) {
 }
 
 bool Memory::loaded() {
+    LOG_INFO("Inquery about the state of the cartridge");
     return m_cart.loaded();
 }
 

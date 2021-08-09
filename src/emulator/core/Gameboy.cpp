@@ -45,6 +45,11 @@ void Gameboy::reset() {
     m_apu.reset();
 }
 
+bool Gameboy::rom_loaded() {
+    LOG_INFO("Inquery about the state of the cartridge");
+    return m_memory.loaded();
+}
+
 bool Gameboy::load_rom(const std::string &rom_path, bool save_load_ram) {
     m_save_load_ram = save_load_ram;
     m_file_name = file_name(rom_path);
@@ -116,6 +121,7 @@ void Gameboy::save_ram() {
 }
 
 void Gameboy::run_for(usize cycles) {
+    //LOG_INFO("Gameboy running for {} cycles", cycles);
     m_scheduler.run_for(cycles);
 }
 

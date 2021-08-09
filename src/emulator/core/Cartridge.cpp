@@ -42,7 +42,6 @@ void Cartridge::load(usize rom_size, u8 *rom_data) {
         delete[] rom;
     }
 
-    m_loaded = true;
     rom = new u8[rom_size];
     size = rom_size;
 
@@ -62,9 +61,12 @@ void Cartridge::load(usize rom_size, u8 *rom_data) {
     header.version = rom[0x014C];
     header.checksum = rom[0x014D];
     memcpy(&header.glob_checksum, &rom[0x014C], sizeof(ROM_Header::glob_checksum));
+    
+    m_loaded = true;
 }
 
 bool Cartridge::loaded() {
+    LOG_INFO("Inquery about the state of the cartridge: Loaded: {}", m_loaded);
     return m_loaded;
 }
 

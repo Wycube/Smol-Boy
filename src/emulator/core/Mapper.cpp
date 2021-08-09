@@ -59,12 +59,12 @@ void MBC::load_ram(u8 *ram_data) {
 
 //Ignore the number of rom banks provided completely and only add a ram bank if ram_banks is not zero.
 void NoMBC::init(u8 rom_banks, u8 ram_banks) {
-    m_rom.reserve(32 * KiB);
+    m_rom.resize(32 * KiB);
     m_rom_banks = 2;
     m_ram_banks = 0;
 
     if(ram_banks != 0) {
-        m_ram.reserve(8 * KiB);
+        m_ram.resize(8 * KiB);
         m_ram_banks = 1;
     }
 }
@@ -109,8 +109,8 @@ void MBC1::init(u8 rom_banks, u8 ram_banks) {
     LOG_INFO("[MBC1] : Number of ROM banks: {}", m_rom_banks);
     LOG_INFO("[MBC1] : Number of RAM banks: {}", m_ram_banks);
 
-    m_rom.reserve(m_rom_banks * 16 * KiB);
-    m_ram.reserve(m_ram_banks * 8 * KiB);
+    m_rom.resize(m_rom_banks * 16 * KiB);
+    m_ram.resize(m_ram_banks * 8 * KiB);
 }
 
 void MBC1::load_rom(u8 *rom_data) {
@@ -181,8 +181,8 @@ void MBC3::init(u8 rom_banks, u8 ram_banks) {
     LOG_INFO("[MBC3] : Number of ROM banks: {}", m_rom_banks);
     LOG_INFO("[MBC3] : Number of RAM banks: {}", m_ram_banks);
 
-    m_rom.reserve(m_rom_banks * 16 * KiB);
-    m_ram.reserve(m_ram_banks * 8 * KiB);
+    m_rom.resize(m_rom_banks * 16 * KiB);
+    m_ram.resize(m_ram_banks * 8 * KiB);
 }
 
 void MBC3::load_rom(u8 *rom_data) {

@@ -7,8 +7,8 @@
 #include <argpars.hpp>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
-#include <iostream>
 #include <SDL.h>
+#include <iostream>
 
 //TODO before going public :
 // - Add MBC5
@@ -17,14 +17,13 @@
 static constexpr struct {
     int MAJOR = 0;
     int MINOR = 3;
-    int PATCH = 2;
+    int PATCH = 3;
 } VERSION;
 
 static constexpr float GB_SCREEN_RATIO = (float)GB_SCREEN_WIDTH / (float)GB_SCREEN_HEIGHT;
 
 struct ResizeEventInfo {
     SDL_Window *window;
-    SDL_Renderer *renderer;
     SDLVideoDevice *video_device;
     SDL_Rect *dst_rect;
 };
@@ -53,10 +52,7 @@ static int resize_event_watch(void *user_data, SDL_Event *event) {
         }
 
         //Blit texture onto the screen
-        SDL_Texture *texture = info->video_device->get_texture(info->renderer);
-        SDL_RenderClear(info->renderer);
-        SDL_RenderCopy(info->renderer, texture, 0, info->dst_rect);
-        SDL_RenderPresent(info->renderer);
+        info->video_device->present_to_window(*info->dst_rect);
     }
 
     return 0;
@@ -66,7 +62,7 @@ int main(int argc, char *argv[]) {
     ap::Options args;
     args.add_option(ap::Builder().lname("help").sname("h").help("Shows this help message.").build());
     args.add_option(ap::Builder().lname("version").sname("v").help("Shows the software version.").build());
-    args.add_option(ap::Builder().lname("boot-rom").sname("b").param().def_param("").help("Specifies a path to a 256-byte boot ROM to be loaded.").build());
+    args.add_option(ap::Builder().lname("boot-rom").sname("b").param().help("Specifies a path to a 256-byte boot ROM to be loaded.").build());
     args.add_option(ap::Builder().lname("headless").help("Runs the emulator without the window, used for testing and logging.").build());
     args.add_option(ap::Builder().lname("stub-ly").help("Stubs LY to 0x90, or 144. For logging purposes, only used with --headless.").build());
     args.add_option(ap::Builder().lname("no-save").help("Doesn't save MBC external RAM to a file or load from a file.").build());
@@ -101,32 +97,32 @@ int main(int argc, char *argv[]) {
 
         SDL_Window *window = SDL_CreateWindow("Smol Boy", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, GB_SCREEN_WIDTH * 4, GB_SCREEN_HEIGHT * 4, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
         SDL_SetWindowIcon(window, logo);
-        SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 
         //Allow dropfile events
         SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
 
-        SDLVideoDevice video_device(GB_SCREEN_WIDTH, GB_SCREEN_HEIGHT);
+        SDLVideoDevice video_device(window, GB_SCREEN_WIDTH, GB_SCREEN_HEIGHT);
         SDLInputDevice input_device;
         SDLAudioDevice audio_device;
 
+        sb::Gameboy gb(args.other_args[0], args.get_param_any("boot-rom"), video_device, input_device, audio_device, !args.is_set("no-save"));
+        audio_device.set_sync(true, &gb);
+        audio_device.start();
+
+        SDL_SetWindowTitle(window, fmt::format("Smol Boy - {}", gb.get_title()).c_str());
+
         SDL_Rect dst_rect = {0, 0, GB_SCREEN_WIDTH * 4, GB_SCREEN_HEIGHT * 4};
 
-        ResizeEventInfo event_info = {window, renderer, &video_device, &dst_rect};
+        ResizeEventInfo event_info = {window, &video_device, &dst_rect};
         SDL_AddEventWatch(resize_event_watch, &event_info);
 
         //Clear screen to white at the start
         video_device.clear_screen(0xffffffff);
         video_device.present_screen();
 
-        sb::Gameboy gb(args.other_args[0], args.get_param_any("boot-rom"), video_device, input_device, audio_device, !args.is_set("no-save"));
-
-        float counter = 0, frame_count = 0, avg_fps = 0;
         bool finished = false;
 
         while(!finished) {
-            u32 start = SDL_GetTicks();
-            
             SDL_Event event;
             while(SDL_PollEvent(&event)) {
                 input_device.handle_event(event);
@@ -139,31 +135,24 @@ int main(int argc, char *argv[]) {
                 if(event.type == SDL_DROPFILE) {
                     gb.save_ram();
                     gb.load_rom(event.drop.file, !args.is_set("no-save"));
+                    SDL_SetWindowTitle(window, fmt::format("Smol Boy - {}", gb.get_title()).c_str());
+                }
+
+                //Fast Forward Hotkey
+                if(event.type == SDL_KEYDOWN && event.key.keysym.scancode == SDL_SCANCODE_U) {
+                    audio_device.stop();
+                    audio_device.set_sync(!audio_device.syncing(), &gb);
+                    audio_device.start();
                 }
             }
 
-            gb.run_for(CYCLES_PER_FRAME);
-
-            SDL_Texture *texture = video_device.get_texture(renderer);
-            SDL_RenderClear(renderer);
-            SDL_RenderCopy(renderer, texture, 0, &dst_rect);
-            SDL_RenderPresent(renderer);
-
-            //Get framerate
-            frame_count++;
-            counter += SDL_GetTicks() - start;
-
-            //Every second
-            if(counter >= 1000.0f) {
-                avg_fps = frame_count / (counter / 1000.0f);
-                frame_count = 0;
-                counter = 0;
+            if(!audio_device.syncing()) {
+                gb.run_for(CYCLES_PER_FRAME);
             }
 
-            SDL_SetWindowTitle(window, fmt::format("Smol Boy - {} | {:.2f} FPS", gb.get_title(), avg_fps).c_str());
+            video_device.present_to_window(dst_rect);
         }
 
-        SDL_DestroyRenderer(renderer);
         SDL_DestroyWindow(window);
 
         SDL_FreeSurface(logo);
