@@ -30,6 +30,7 @@ u8 CPU::halt(u8 first, u8 second) {
 
 u8 CPU::stop(u8 first, u8 second) {
     m_stopped = true;
+    LOG_INFO("Stopped = true");
     return 0;
 }
 

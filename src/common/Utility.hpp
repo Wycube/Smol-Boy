@@ -34,17 +34,17 @@ private:
 	T m_buffer[_capacity];
 	usize m_head, m_tail;
 	usize m_size;
-	//std::mutex m_lock;
+	std::mutex m_lock;
 
 public:
 
 	RingBuffer() : m_head(0), m_tail(0) { }
 
 	void push_back(T value) {
-		//m_lock.lock();
+		m_lock.lock();
 		m_buffer[m_head] = value;
 		m_head = (m_head + 1) % _capacity;
-		//m_lock.unlock();
+		m_lock.unlock();
 	}
 
 	T pop_front() {
@@ -53,20 +53,20 @@ public:
 			throw new std::out_of_range("Trying to pop front of an empty RingBuffer!");
 		}
 
-		//m_lock.lock();
+		m_lock.lock();
 		T &elem = m_buffer[m_tail];
 		m_tail = (m_tail + 1) % _capacity;
-		//m_lock.unlock();
+		m_lock.unlock();
 
 		return elem;
 	}
 
 	void clear() {
-		//m_lock.lock();
+		m_lock.lock();
 		m_head = 0;
 		m_tail = 0;
 		m_buffer[0] = 0;
-		//m_lock.unlock();
+		m_lock.unlock();
 	}
 
 	usize capacity() {

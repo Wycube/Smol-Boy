@@ -66,6 +66,7 @@ int main(int argc, char *argv[]) {
     args.add_option(ap::Builder().lname("headless").help("Runs the emulator without the window, used for testing and logging.").build());
     args.add_option(ap::Builder().lname("stub-ly").help("Stubs LY to 0x90, or 144. For logging purposes, only used with --headless.").build());
     args.add_option(ap::Builder().lname("no-save").help("Doesn't save MBC external RAM to a file or load from a file.").build());
+    args.add_option(ap::Builder().lname("force-model").sname("f").param().def_param("DMG").help("Forces a certain Gameboy model (DMG or CGB).").build());
     args.parse_args(argc, argv);
 
     //Show usage message
@@ -88,6 +89,21 @@ int main(int argc, char *argv[]) {
         LOG_FATAL("SDL failed to initialize!");
     }
 
+    //Check if forced-model is valid one
+    sb::GB_MODEL model = sb::DMG;
+
+    if(args.is_set_any("f")) {
+        if(args.get_param_any("f") == "DMG") {
+            model = sb::DMG;
+        } else if(args.get_param_any("f") == "CGB") {
+            model = sb::CGB;
+        } else {
+            LOG_FATAL("Invalid model {} provided!", args.get_param_any("f"));
+        }
+
+        LOG_INFO("Forcing model {}", args.get_param_any("f"));
+    }
+
     //With window
     if(!args.is_set("headless")) {
         //TODO: Embed this later on with some python script version of image-to-array or something
@@ -105,7 +121,7 @@ int main(int argc, char *argv[]) {
         SDLInputDevice input_device;
         SDLAudioDevice audio_device;
 
-        sb::Gameboy gb(args.other_args[0], args.get_param_any("boot-rom"), video_device, input_device, audio_device, !args.is_set("no-save"));
+        sb::Gameboy gb(args.other_args[0], args.get_param_any("boot-rom"), {video_device, input_device, audio_device, model, args.is_set_any("f"), !args.is_set("no-save")});
         audio_device.set_sync(true, &gb);
         audio_device.start();
 
@@ -135,7 +151,7 @@ int main(int argc, char *argv[]) {
                 if(event.type == SDL_DROPFILE) {
                     gb.save_ram();
                     gb.load_rom(event.drop.file, !args.is_set("no-save"));
-                    SDL_SetWindowTitle(window, fmt::format("Smol Boy - {}", gb.get_title().substr(0, 12)).c_str());
+                    SDL_SetWindowTitle(window, fmt::format("Smol Boy - {}", gb.get_title()).c_str());
                 }
 
                 //Fast Forward Hotkey
@@ -161,7 +177,7 @@ int main(int argc, char *argv[]) {
         sb::NullVideoDevice video_device(GB_SCREEN_WIDTH, GB_SCREEN_HEIGHT);
         sb::NullInputDevice input_device;
         sb::NullAudioDevice audio_device;
-        sb::Gameboy gb(args.other_args[0], args.get_param_any("boot-rom"), video_device, input_device, audio_device, false, args.is_set("stub-ly")); //No saving RAM with headless
+        sb::Gameboy gb(args.other_args[0], args.get_param_any("boot-rom"), {video_device, input_device, audio_device, model, args.is_set_any("f"), false, args.is_set("stub-ly")}); //No saving RAM with headless
 
         while(true) {
             gb.run_for(CYCLES_PER_FRAME);

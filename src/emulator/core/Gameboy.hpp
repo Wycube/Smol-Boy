@@ -7,6 +7,7 @@
 #include "Memory.hpp"
 #include "Timer.hpp"
 #include "Scheduler.hpp"
+#include "GBCommon.hpp"
 
 
 // 4,194,304 hz / 59.7275 fps
@@ -25,12 +26,14 @@ private:
     Timer m_timer;
     Scheduler m_scheduler;
 
+    GB_MODEL m_model;
+    bool m_force_model;
     std::string m_file_name;
     bool m_save_load_ram;
 
 public:
 
-    Gameboy(const std::string &rom_path, const std::string &boot_path, VideoDevice &video_device, InputDevice &input_device, AudioDevice &audio_device, bool save_load_ram = true, bool stub_ly = false);
+    Gameboy(const std::string &rom_path, const std::string &boot_path, GameboySettings settings);
     ~Gameboy();
 
     void reset();

@@ -7,6 +7,7 @@
 #include "common/Utility.hpp"
 #include "emulator/core/Memory.hpp"
 #include "emulator/core/Scheduler.hpp"
+#include "emulator/core/GBCommon.hpp"
 #include "mnemonic.hpp"
 
 #include <array>
@@ -209,6 +210,7 @@ private:
     bool m_halted;
     bool m_stopped;
 
+    GB_MODEL &m_model;
     bool m_skip_bootrom;
 
     Reg& get_reg16(Reg16 reg);
@@ -227,7 +229,7 @@ private:
 
 public:
 
-    CPU(Memory &mem, Clock &clock, bool skip_bootrom = true);
+    CPU(Memory &mem, Clock &clock, GB_MODEL &model, bool skip_bootrom = true);
     ~CPU();
 
     void service_interrupts();

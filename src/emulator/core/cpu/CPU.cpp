@@ -4,7 +4,7 @@
 
 namespace sb {
 
-CPU::CPU(Memory &mem, Clock &clock, bool skip_bootrom) : m_mem(mem), m_clock(clock), m_skip_bootrom(skip_bootrom) {
+CPU::CPU(Memory &mem, Clock &clock, GB_MODEL &model, bool skip_bootrom) : m_mem(mem), m_clock(clock), m_model(model), m_skip_bootrom(skip_bootrom) {
     reset();
 }
 
@@ -85,6 +85,7 @@ void CPU::service_interrupts() {
     u8 ints = int_f & int_e & 0x1f;
     if(ints != 0) {
         m_halted = false; //Apparently IME doesn't matter to stop halting
+        m_stopped = false;
 
         if(m_ime) {
             bool vblank = ints & VBLANK_INT;
@@ -137,13 +138,23 @@ void CPU::reset() {
     m_stopped = false;
 
     if(m_skip_bootrom) {
-        af.value = 0x01B0;
-        bc.value = 0x0013;
-        de.value = 0x00D8;
-        hl.value = 0x014D;
-        sp.value = 0xFFFE;
-        pc.value = 0x0100;
-        m_mem.write(0xFF00 + 0x50, 1);
+        if(m_model == DMG) {
+            af.value = 0x01B0;
+            bc.value = 0x0013;
+            de.value = 0x00D8;
+            hl.value = 0x014D;
+            sp.value = 0xFFFE;
+            pc.value = 0x0100;
+            m_mem.write(0xFF00 + 0x50, 1);
+        } else {
+            af.value = 0x1180;
+            bc.value = 0x0000;
+            de.value = 0xFF56;
+            hl.value = 0x000D;
+            sp.value = 0xFFFE;
+            pc.value = 0x0100;
+            m_mem.write(0xFF00 + 0x50, 1);
+        }
     } else {
         af.value = 0;
         bc.value = 0;

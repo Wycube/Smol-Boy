@@ -6,9 +6,10 @@
 
 namespace sb {
 
-Gameboy::Gameboy(const std::string &rom_path, const std::string &boot_path, VideoDevice &video_device, InputDevice &input_device, AudioDevice &audio_device, bool save_load_ram, bool stub_ly)
-: m_memory(m_cpu, m_ppu, m_apu, m_timer, input_device), m_cpu(m_memory, m_scheduler.cpu_clock, boot_path.empty()), 
-m_ppu(m_cpu, m_memory, m_scheduler.ppu_clock, video_device, stub_ly), m_apu(m_timer, audio_device), m_timer(m_cpu) {
+Gameboy::Gameboy(const std::string &rom_path, const std::string &boot_path, GameboySettings settings)
+: m_memory(m_cpu, m_ppu, m_apu, m_timer, settings.input_device), m_cpu(m_memory, m_scheduler.cpu_clock, m_model, boot_path.empty()), 
+m_ppu(m_cpu, m_memory, m_scheduler.ppu_clock, settings.video_device, settings.stub_ly), m_apu(m_timer, settings.audio_device), m_timer(m_cpu),
+m_save_load_ram(settings.save_load_ram), m_model(settings.model), m_force_model(settings.force_model) {
     m_scheduler.set_cpu_step([&]() {
         if(!m_cpu.halted() && !m_cpu.stopped()) {
             m_cpu.step();
@@ -16,7 +17,7 @@ m_ppu(m_cpu, m_memory, m_scheduler.ppu_clock, video_device, stub_ly), m_apu(m_ti
             //Execute a nop while halted
             m_cpu.nop();
         }
-        m_cpu.service_interrupts(); 
+        m_cpu.service_interrupts();
     });
     m_scheduler.set_ppu_step([&]() { 
         if(!m_cpu.stopped()) {
@@ -26,8 +27,15 @@ m_ppu(m_cpu, m_memory, m_scheduler.ppu_clock, video_device, stub_ly), m_apu(m_ti
         }
     });
 
-    load_rom(rom_path, save_load_ram);
+    load_rom(rom_path, m_save_load_ram);
     if(!boot_path.empty()) load_boot(boot_path);
+
+    //Determine model if it's not being forced
+    if(!m_force_model) {
+        m_model = m_memory.get_cart().header.cgb_flag & 0x80 ? CGB : DMG;
+    }
+
+    reset();
 }
 
 Gameboy::~Gameboy() {
@@ -46,7 +54,6 @@ void Gameboy::reset() {
 }
 
 bool Gameboy::rom_loaded() {
-    LOG_INFO("Inquery about the state of the cartridge");
     return m_memory.loaded();
 }
 
@@ -121,12 +128,23 @@ void Gameboy::save_ram() {
 }
 
 void Gameboy::run_for(usize cycles) {
-    //LOG_INFO("Gameboy running for {} cycles", cycles);
     m_scheduler.run_for(cycles);
 }
 
 std::string Gameboy::get_title() {
-    return std::string((char*)m_memory.get_cart().header.dmg_title);
+    if(m_memory.get_cart().header.cgb_flag & 0x80) {
+        char title[12];
+        memcpy(title, m_memory.get_cart().header.cgb_title, 11);
+        title[11] = '\0';
+
+        return std::string(title);
+    } else {
+        char title[17];
+        memcpy(title, m_memory.get_cart().header.dmg_title, 16);
+        title[16] = '\0';
+        
+        return std::string(title);
+    }
 }
 
 } //namespace sb
