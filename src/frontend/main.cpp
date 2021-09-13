@@ -106,9 +106,8 @@ int main(int argc, char *argv[]) {
 
     //With window
     if(!args.is_set("headless")) {
-        //TODO: Embed this later on with some python script version of image-to-array or something
         int w, h, channels;
-        u8 *logo_pixels = stbi_load("D:/Spencer/dev/c++/smol-boy/res/logo.png", &w, &h, &channels, 4);
+        u8 *logo_pixels = stbi_load("logo.png", &w, &h, &channels, 4);
         SDL_Surface *logo = SDL_CreateRGBSurfaceWithFormatFrom((void*)logo_pixels, w, h, channels * sizeof(u8), w * channels, SDL_PIXELFORMAT_RGBA32);
 
         SDL_Window *window = SDL_CreateWindow("Smol Boy", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, GB_SCREEN_WIDTH * 4, GB_SCREEN_HEIGHT * 4, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
