@@ -42,5 +42,5 @@ jobs:
       with:
         name: executable-${{matrix.platform}}
         path: 
-          ${{github.workspace}}/build/bin/${{env.BUILD_TYPE}}/main
-          ${{github.workspace}}/build/bin/${{env.BUILD_TYPE}}/main.exe
+          # Windows has the .exe extension, MacOS and Linux do not
+          ${{github.workspace}}/build/bin/${{env.BUILD_TYPE}}/main*
