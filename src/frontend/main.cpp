@@ -10,9 +10,6 @@
 #include <SDL.h>
 #include <iostream>
 
-//TODO before going public :
-// - Add MBC5
-
 
 static constexpr struct {
     int MAJOR = 0;
