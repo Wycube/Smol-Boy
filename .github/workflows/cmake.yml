@@ -43,5 +43,4 @@ jobs:
         name: executable-${{matrix.platform}}
         # Windows uses the .exe extension and uses an extra directory named after the build type, MacOS and Linux do not
         path: |
-          ${{github.workspace}}/build/bin/${{env.BUILD_TYPE}}/main
-          ${{github.workspace}}/build/bin/${{env.BUILD_TYPE}}/${{env.BUILD_TYPE}}/main.exe
+          ${{github.workspace}}/build/bin/${{env.BUILD_TYPE}}/**/main*
