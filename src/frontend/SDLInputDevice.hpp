@@ -76,6 +76,8 @@ public:
                 break;
                 case SDL_SCANCODE_X : m_action[0] = true; fire_int = true;
                 break;
+                case SDL_SCANCODE_L : memset(m_actions, true, sizeof(m_actions)); fire_int = true;
+                break;
                 case SDL_SCANCODE_UP : m_dir[1] = true; fire_int = true;
                 break;
                 case SDL_SCANCODE_RIGHT : m_dir[3] = true; fire_int = true;
@@ -94,6 +96,8 @@ public:
                 case SDL_SCANCODE_Z : m_action[1] = false;
                 break;
                 case SDL_SCANCODE_X : m_action[0] = false;
+                break;
+                case SDL_SCANCODE_L : memset(m_actions, false, sizeof(m_actions));
                 break;
                 case SDL_SCANCODE_UP : m_dir[1] = false;
                 break;
